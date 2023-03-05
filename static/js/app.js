@@ -1,70 +1,125 @@
 // Read the url
 let url = "https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json"
-let data = d3.json(url).then(function(data) {
+d3.json(url).then(function(data) 
+{
 
+    // Create variables to hold the arrays of data
+    let samples = data.samples;
+    let metadata = data.metadata;
+    let names = data.names;
 
-    let first_value_values = data.samples[0].sample_values.slice(0,10); 
-    let first_value_id = data.samples[0].otu_ids.slice(0,10); 
-    let first_value_labels = data.samples[0].otu_labels.slice(0,10); 
-    console.log(first_value_values );
-    console.log(first_value_id);
-    console.log(first_value_labels);
+    // Add Test Subject ID No. to the dropdown menu
 
-    // Initialises the page with a default plot
+    names.map((name) => {d3.select("#selDataset").append("option").text(name).property("value", name);});
+
+    // Create the initial page with default graphs
     function init() {
-      data = [{
-        y: first_value_id.map(item =>`OTU ${item}`).reverse(),
-        x: first_value_values.reverse(),
-        text: first_value_labels.reverse(),
+
+        // Set initial sample ID
+        let default_data  = samples[0];
+        console.log(default_data);
+
+        // Select values in the default dataset to plot
+        let default_values = default_data.sample_values; 
+        let default_id = default_data.otu_ids; 
+        let default_labels = default_data.otu_labels; 
+
+        // Select top 10 OTUs with their samples values, otu id and otu labels in the correct order to plot bar chart
+        let top_ten_values = default_values.slice(0,10).reverse();
+        let top_ten_id = default_id.slice(0,10).reverse();
+        let top_ten_labels = default_labels.slice(0,10).reverse();
+
+        //Plot a bar chart of the top ten
+        bardata = [{
+        y: top_ten_id.map(item =>`OTU ${item}`),
+        x: top_ten_values,
+        text: top_ten_labels,
         type: "bar",
         orientation: "h"}];
-    
-      Plotly.newPlot("bar", data);
+            
+        barlayout = {
+        title: `<b>Top 10 OTUs<b>`,
+        xaxis: { title: "Sample Value"},
+        width: 500,
+        height: 600};
+
+        Plotly.newPlot("bar", bardata, barlayout);
+        
+        // Bubble Chart
+        let bubbledata =[{
+        x: default_id,
+        y: default_values,
+        mode: 'markers',
+        marker: {color: default_id,
+                size: default_values}}];
+
+        let bubblelayout = {
+        title: '<b>Sample Values of OTU IDs<b>',
+        xaxis: { title: "OTU ID"},
+        yaxis: { title: "Sample Value"}, 
+        showlegend: false};
+
+        Plotly.newPlot("bubble", bubbledata, bubblelayout);
+
+
+        // Demographic Info
+        default_metadata = metadata[0];
+
+        Object.entries(default_metadata).forEach(([key, value]) => d3.select("#sample-metadata")
+        .append("p").text(`${key}: ${value}`));
+
     };
 
+    init();
+
+
     // Call updatePlotly() when a change takes place to the DOM
-d3.selectAll("#selDataset").on("change", updatePlotly);
+    d3.selectAll("#selDataset").on("change", updatePlotly);
 
-// This function is called when a dropdown menu item is selected
-function updatePlotly() {
-  // Use D3 to select the dropdown menu
-  let dropdownMenu = d3.select("#selDataset");
-  // Assign the value of the dropdown menu option to a variable
-  let dataset = dropdownMenu.property("value");
+    function updatePlotly(){
 
-  // Initialise x and y arrays
-  let x = [];
-  let y = [];
-  let text = []
-  for (let i =0; i < data.samples.length; i++){
-  if (data.samples[i].selected) {
-    x = data.samples[i].sample_values.slice(0,10).map(item =>`OTU ${item}`).reverse();
-    y = data.samples[i].otu_ids.slice(0,10).reverse();
-    text = data.samples[i].otu_labels.slice(0,10).reverse();
-  };
-  };
-  // Note the extra brackets around 'x' and 'y'
-  Plotly.restyle("plot", "x", [x]);
-  Plotly.restyle("plot", "y", [y]);
-  Plotly.restyle("plot", "text", [text]);
-}
+        // Use D3 to select the dropdown menu
+        let dropdownMenu = d3.select("#selDataset");
 
-init();
+        // Assign the value of the dropdown menu option to a variable
+        let inputValue = dropdownMenu.property("value");
+
+        // Filter the database based on the input Value ID
+        let dataset = data.samples.filter(sample => sample.id === inputValue)[0];
+        console.log(dataset);
+
+        // Select all sample values, otu ids and otu labels of the selected test ID
+
+        let values = dataset.sample_values; 
+        let id = dataset.otu_ids; 
+        let labels = dataset.otu_labels; 
+
+        // Select top 10  sample values, otu ids and otu labels of the selected test ID
+
+        let top_values = values.slice(0,10).reverse();
+        let top_id = id.slice(0,10).reverse();
+        let top_labels = labels.slice(0,10).reverse();
+
+        // Bar Chart
+        Plotly.restyle("bar", "x", [top_values]);
+        Plotly.restyle("bar", "y", [top_id.map(outId => `OTU ${outId}`)]);
+        Plotly.restyle("bar", "text", [top_labels]);
+
+
+        // Bubble Chart
+        Plotly.restyle('bubble', "x", [id]);
+        Plotly.restyle('bubble', "y", [values]);
+        Plotly.restyle('bubble', "text", [labels]);
+        Plotly.restyle('bubble', "marker.color", [id]);
+        Plotly.restyle('bubble', "marker.size", [values]);
+
+        // Demograhic Info
+        metainfo = data.metadata.filter(sample => sample.id == inputValue)[0];
+
+        // Clear out current contents in the panel
+        d3.select("#sample-metadata").html("");
+
+        // Display each key-value pair from the metadata JSON object
+        Object.entries(metainfo).forEach(([key, value]) => d3.select("#sample-metadata").append("p").text(`${key}: ${value}`));
+    }
 });
- 
-
-
-// --------------------------------------------------------------------------------
-// PLOT HORIZONTAL BAR CHART WITH DROPDOWN VALUE OF TOP 10 OTUs 
-// --------------------------------------------------------------------------------
-
-
-// data['samples'][1]["otu_ids"]
-
-
-
-
-
-
-
-
