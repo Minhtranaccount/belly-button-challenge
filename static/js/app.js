@@ -41,7 +41,7 @@ d3.json(url).then(function(data)
         title: `<b>Top 10 OTUs<b>`,
         xaxis: { title: "Sample Value"},
         width: 500,
-        height: 600};
+        height: 550};
 
         Plotly.newPlot("bar", bardata, barlayout);
         
@@ -51,7 +51,8 @@ d3.json(url).then(function(data)
         y: default_values,
         mode: 'markers',
         marker: {color: default_id,
-                size: default_values}}];
+                size: default_values,
+                colorscale:"Earth"}}];
 
         let bubblelayout = {
         title: '<b>Sample Values of OTU IDs<b>',
@@ -64,10 +65,8 @@ d3.json(url).then(function(data)
 
         // Demographic Info
         default_metadata = metadata[0];
-
-        Object.entries(default_metadata).forEach(([key, value]) => d3.select("#sample-metadata")
-        .append("p").text(`${key}: ${value}`));
-
+        
+        for (key in default_metadata){d3.select("#sample-metadata").append("p").text(`${key}: ${default_metadata[key]}`)};
     };
 
     init();
@@ -115,11 +114,12 @@ d3.json(url).then(function(data)
 
         // Demograhic Info
         metainfo = data.metadata.filter(sample => sample.id == inputValue)[0];
-
+        
         // Clear out current contents in the panel
         d3.select("#sample-metadata").html("");
 
         // Display each key-value pair from the metadata JSON object
-        Object.entries(metainfo).forEach(([key, value]) => d3.select("#sample-metadata").append("p").text(`${key}: ${value}`));
+        for (key in metainfo){d3.select("#sample-metadata").append("p").text(`${key}: ${metainfo[key]}`)};
+        
     }
 });
